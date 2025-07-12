@@ -1,175 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>SmartPDF - All-in-One PDF Tools</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <style>
-    body { margin: 0; font-family: Arial, sans-serif; background: #f9f9f9; }
-    header { background: #007ACC; color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { margin: 0; }
-    nav a { color: white; margin-left: 20px; text-decoration: none; font-weight: bold; }
-    .hero { text-align: center; padding: 3em 1em; background: #e6f3ff; }
-    .hero h2 { margin: 0.5em 0; }
-    .tool-section { padding: 2em; }
-    .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1em; }
-    .tool-card { background: white; border-radius: 8px; padding: 1em; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; cursor: pointer; }
-    .tool-card i { font-size: 2em; color: #007ACC; margin-bottom: 0.5em; }
-    .tool-card span { display: block; font-weight: bold; }
-    .hidden { display: none; }
-    canvas { max-width: 100%; border: 1px solid #ccc; margin: 1em 0; }
-    input, button, select { padding: 0.5em; margin: 0.5em 0; display: block; width: 100%; max-width: 400px; }
-    .tool-action { margin-top: 1em; }
-    footer { text-align: center; padding: 2em 1em; font-size: 0.9em; color: #888; }
-  </style>
-</head>
-<body>
-
-<header>
-  <h1>SmartPDF</h1>
-  <nav>
-    <a href="#tools">Tools</a>
-    <a href="#upload">Preview</a>
-  </nav>
-</header>
-
-<section class="hero">
-  <h2>Your One‑Stop PDF Toolkit</h2>
-  <p>Merge, Edit, Convert, and Manage PDFs directly in your browser</p>
-</section>
-
-<section id="tools" class="tool-section">
-  <h2>Available Tools</h2>
-  <div class="tool-grid">
-    <div class="tool-card" onclick="document.getElementById('upload-file').click();"><i class="fa fa-eye"></i><span>Preview PDF</span></div>
-    <div class="tool-card" onclick="document.getElementById('merge-files').click();"><i class="fa fa-object-group"></i><span>Merge PDF</span></div>
-    <div class="tool-card" onclick="document.getElementById('pagenum-btn').click();"><i class="fa fa-list-ol"></i><span>Add Page Numbers</span></div>
-    <div class="tool-card" onclick="document.getElementById('compress-btn').click();"><i class="fa fa-compress"></i><span>Compress PDF</span></div>
-    <div class="tool-card" onclick="document.getElementById('rotate-btn').click();"><i class="fa fa-sync-alt"></i><span>Rotate Page</span></div>
-    <div class="tool-card" onclick="document.getElementById('delete-btn').click();"><i class="fa fa-trash-alt"></i><span>Delete Page</span></div>
-    <div class="tool-card" onclick="document.getElementById('watermark-btn').click();"><i class="fa fa-tint"></i><span>Add Watermark</span></div>
-  </div>
-</section>
-
-<section id="upload" class="tool-section">
-  <h2>Preview and Work Area</h2>
-  <input type="file" id="upload-file" accept="application/pdf"/>
-  <canvas id="pdf-canvas"></canvas>
-  <input type="file" id="merge-files" accept="application/pdf" multiple class="hidden"/>
-  <input type="text" id="watermark-text" placeholder="Watermark Text"/>
-  <div class="tool-action">
-    <button id="pagenum-btn">Add Page Numbers</button>
-    <button id="compress-btn">Compress PDF</button>
-    <button id="rotate-btn">Rotate Current Page</button>
-    <button id="delete-btn">Delete Current Page</button>
-    <button id="watermark-btn">Add Watermark</button>
-  </div>
-</section>
-
-<footer>
-  &copy; 2025 SmartPDF. Built with ♥ for browser-based productivity.
-</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
+</script>
+<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+<canvas id="pdf-canvas"></canvas>
+<input type="file" id="upload-file" accept="application/pdf"/>
+<button id="prev-btn">Prev</button>
+<button id="next-btn">Next</button>
+<button id="rotate-btn">Rotate</button>
+<button id="delete-btn">Delete Page</button>
+<button id="pagenum-btn">Add Page Numbers</button>
 
 <script>
-let pdfDoc = null, currentPage = 1, scale = 1.2;
-const canvas = document.getElementById('pdf-canvas');
-const ctx = canvas.getContext('2d');
+  let pdfDoc, currentPage = 1, scale = 1.2;
+  const canvas = document.getElementById('pdf-canvas'), ctx = canvas.getContext('2d');
+  async function renderPage() {
+    const page = await pdfDoc.getPage(currentPage);
+    const vp = page.getViewport({ scale });
+    canvas.width = vp.width; canvas.height = vp.height;
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  }
 
-document.getElementById('upload-file').addEventListener('change', async e => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const arr = new Uint8Array(await f.arrayBuffer());
-  pdfDoc = await pdfjsLib.getDocument({data: arr}).promise;
-  currentPage = 1;
-  renderPage();
-});
+  document.getElementById('upload-file').onchange = async e => {
+    const u8 = new Uint8Array(await e.target.files[0].arrayBuffer());
+    pdfDoc = await pdfjsLib.getDocument({ data: u8 }).promise;
+    currentPage = 1; await renderPage();
+  };
 
-async function renderPage() {
-  const page = await pdfDoc.getPage(currentPage);
-  const vp = page.getViewport({ scale });
-  canvas.width = vp.width;
-  canvas.height = vp.height;
-  await page.render({ canvasContext: ctx, viewport: vp }).promise;
-}
+  document.getElementById('prev-btn').onclick = () => { if (currentPage>1) currentPage--, renderPage(); };
+  document.getElementById('next-btn').onclick = () => { if (currentPage<pdfDoc.numPages) currentPage++, renderPage(); };
 
-function download(bytes, name) {
-  const blob = new Blob([bytes], { type: 'application/pdf' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
+  document.getElementById('rotate-btn').onclick = async () => {
+    const existing = await pdfDoc.save();
+    const doc = await PDFLib.PDFDocument.load(existing);
+    const pg = doc.getPages()[currentPage - 1];
+    pg.setRotation(pg.getRotation().rotate(90));
+    const bytes = await doc.save();
+    pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+    await renderPage();
+  };
 
-document.getElementById('pagenum-btn').addEventListener('click', async () => {
-  if (!pdfDoc) return;
-  const f = document.getElementById('upload-file').files[0];
-  const arr = new Uint8Array(await f.arrayBuffer());
-  const doc = await PDFLib.PDFDocument.load(arr);
-  doc.getPages().forEach((pg, i) => {
-    pg.drawText(`Page ${i + 1}`, {
-      x: pg.getWidth() - 50, y: 20, size: 12
+  document.getElementById('delete-btn').onclick = async () => {
+    const existing = await pdfDoc.save();
+    const doc = await PDFLib.PDFDocument.load(existing);
+    doc.removePage(currentPage - 1);
+    const bytes = await doc.save();
+    pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+    if (currentPage > pdfDoc.numPages) currentPage = pdfDoc.numPages;
+    await renderPage();
+  };
+
+  document.getElementById('pagenum-btn').onclick = async () => {
+    const existing = await pdfDoc.save();
+    const doc = await PDFLib.PDFDocument.load(existing);
+    doc.getPages().forEach((p,i)=>{
+      p.drawText(`Page ${i+1}`, { x: p.getWidth()-60, y:20, size:12 });
     });
-  });
-  const bytes = await doc.save();
-  download(bytes, "pagenumbered.pdf");
-});
-
-document.getElementById('compress-btn').addEventListener('click', async () => {
-  if (!pdfDoc) return;
-  const f = document.getElementById('upload-file').files[0];
-  const arr = new Uint8Array(await f.arrayBuffer());
-  const doc = await PDFLib.PDFDocument.load(arr);
-  const newDoc = await PDFLib.PDFDocument.create();
-  const pages = await newDoc.copyPages(doc, doc.getPageIndices());
-  pages.forEach(p => newDoc.addPage(p));
-  const bytes = await newDoc.save({ useObjectStreams: true });
-  download(bytes, "compressed.pdf");
-});
-
-document.getElementById('rotate-btn').addEventListener('click', async () => {
-  if (!pdfDoc) return;
-  const f = document.getElementById('upload-file').files[0];
-  const arr = new Uint8Array(await f.arrayBuffer());
-  const doc = await PDFLib.PDFDocument.load(arr);
-  const page = doc.getPages()[currentPage - 1];
-  page.setRotation(page.getRotation().rotate(90));
-  const bytes = await doc.save();
-  download(bytes, "rotated.pdf");
-});
-
-document.getElementById('delete-btn').addEventListener('click', async () => {
-  if (!pdfDoc) return;
-  const f = document.getElementById('upload-file').files[0];
-  const arr = new Uint8Array(await f.arrayBuffer());
-  const doc = await PDFLib.PDFDocument.load(arr);
-  doc.removePage(currentPage - 1);
-  const bytes = await doc.save();
-  download(bytes, "deleted.pdf");
-});
-
-document.getElementById('watermark-btn').addEventListener('click', async () => {
-  if (!pdfDoc) return;
-  const txt = document.getElementById('watermark-text').value;
-  if (!txt) return alert("Enter watermark text");
-  const f = document.getElementById('upload-file').files[0];
-  const arr = new Uint8Array(await f.arrayBuffer());
-  const doc = await PDFLib.PDFDocument.load(arr);
-  doc.getPages().forEach(pg => {
-    pg.drawText(txt, {
-      x: pg.getWidth()/2 - 50,
-      y: pg.getHeight()/2,
-      size: 36,
-      opacity: 0.4,
-      rotate: PDFLib.degrees(-45)
-    });
-  });
-  const bytes = await doc.save();
-  download(bytes, "watermarked.pdf");
-});
+    const bytes = await doc.save();
+    pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+    await renderPage();
+  };
 </script>
-</body>
-</html>
