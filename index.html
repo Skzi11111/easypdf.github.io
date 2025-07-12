@@ -1,304 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>PDF Toolkit</title>
+  <meta charset="UTF-8" />
+  <title>SmartPDF - All-in-One PDF Tools</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
   <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-    header { background: #007ACC; color: white; padding: 1em; }
-    nav a { margin: 0 10px; color: white; text-decoration: none; }
-    section { padding: 1em; }
-    #canvas-container { border: 1px solid #ccc; position: relative; }
-    canvas { border: 1px solid #000; }
-    .draggable { position: absolute; cursor: move; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f9f9f9; }
+    header { background: #007ACC; color: white; padding: 1em 2em; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; }
+    nav a { color: white; margin-left: 20px; text-decoration: none; font-weight: bold; }
+    .hero { text-align: center; padding: 3em 1em; background: #e6f3ff; }
+    .hero h2 { margin: 0.5em 0; }
+    .tool-section { padding: 2em; }
+    .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1em; }
+    .tool-card { background: white; border-radius: 8px; padding: 1em; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; cursor: pointer; }
+    .tool-card i { font-size: 2em; color: #007ACC; margin-bottom: 0.5em; }
+    .tool-card span { display: block; font-weight: bold; }
     .hidden { display: none; }
-    input, button { margin: .5em 0; }
+    canvas { max-width: 100%; border: 1px solid #ccc; margin: 1em 0; }
+    input, button, select { padding: 0.5em; margin: 0.5em 0; display: block; width: 100%; max-width: 400px; }
+    .tool-action { margin-top: 1em; }
+    footer { text-align: center; padding: 2em 1em; font-size: 0.9em; color: #888; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>PDF Toolkit</h1>
-    <nav>
-      <a href="#upload">Upload / Preview</a>
-      <a href="#esign">E‑Sign & Image</a>
-      <a href="#compress">Compress</a>
-      <a href="#merge">Merge</a>
-      <a href="#rotate">Rotate/Delete/Rearrange</a>
-      <a href="#pagenum">Page Number</a>
-      <a href="#watermark">Watermark</a>
-      <a href="#password">Password / Unlock</a>
-      <a href="#conv">Convert</a>
-    </nav>
-  </header>
 
-  <section id="upload">
-    <h2>Upload & Preview PDF</h2>
-    <input type="file" id="upload-file" accept="application/pdf"/>
-    <div id="canvas-container"><canvas id="pdf-canvas"></canvas></div>
-    <p id="page-info"></p>
-  </section>
+<header>
+  <h1>SmartPDF</h1>
+  <nav>
+    <a href="#tools">Tools</a>
+    <a href="#upload">Preview</a>
+  </nav>
+</header>
 
-  <section id="esign">
-    <h2>Add E‑Sign / Image / Stamp</h2>
-    <input type="file" id="upload-image" accept="image/*"/>
-    <button id="place-image">Place on Canvas</button>
-    <button id="apply-eimage">Embed into PDF</button>
-  </section>
+<section class="hero">
+  <h2>Your One‑Stop PDF Toolkit</h2>
+  <p>Merge, Edit, Convert, and Manage PDFs directly in your browser</p>
+</section>
 
-  <section id="compress">
-    <h2>Compress PDF</h2>
-    <button id="compress-btn">Compress & Download</button>
-  </section>
+<section id="tools" class="tool-section">
+  <h2>Available Tools</h2>
+  <div class="tool-grid">
+    <div class="tool-card" onclick="document.getElementById('upload-file').click();"><i class="fa fa-eye"></i><span>Preview PDF</span></div>
+    <div class="tool-card" onclick="document.getElementById('merge-files').click();"><i class="fa fa-object-group"></i><span>Merge PDF</span></div>
+    <div class="tool-card" onclick="document.getElementById('pagenum-btn').click();"><i class="fa fa-list-ol"></i><span>Add Page Numbers</span></div>
+    <div class="tool-card" onclick="document.getElementById('compress-btn').click();"><i class="fa fa-compress"></i><span>Compress PDF</span></div>
+    <div class="tool-card" onclick="document.getElementById('rotate-btn').click();"><i class="fa fa-sync-alt"></i><span>Rotate Page</span></div>
+    <div class="tool-card" onclick="document.getElementById('delete-btn').click();"><i class="fa fa-trash-alt"></i><span>Delete Page</span></div>
+    <div class="tool-card" onclick="document.getElementById('watermark-btn').click();"><i class="fa fa-tint"></i><span>Add Watermark</span></div>
+  </div>
+</section>
 
-  <section id="merge">
-    <h2>Merge PDFs</h2>
-    <input type="file" id="merge-files" accept="application/pdf" multiple/>
-    <button id="merge-btn">Merge & Download</button>
-  </section>
-
-  <section id="rotate">
-    <h2>Rotate / Delete / Rearrange Pages</h2>
+<section id="upload" class="tool-section">
+  <h2>Preview and Work Area</h2>
+  <input type="file" id="upload-file" accept="application/pdf"/>
+  <canvas id="pdf-canvas"></canvas>
+  <input type="file" id="merge-files" accept="application/pdf" multiple class="hidden"/>
+  <input type="text" id="watermark-text" placeholder="Watermark Text"/>
+  <div class="tool-action">
+    <button id="pagenum-btn">Add Page Numbers</button>
+    <button id="compress-btn">Compress PDF</button>
     <button id="rotate-btn">Rotate Current Page</button>
     <button id="delete-btn">Delete Current Page</button>
-    <button id="prev-btn">Prev Page</button>
-    <button id="next-btn">Next Page</button>
-  </section>
+    <button id="watermark-btn">Add Watermark</button>
+  </div>
+</section>
 
-  <section id="pagenum">
-    <h2>Add Page Numbers</h2>
-    <button id="pagenum-btn">Add Page Numbers & Download</button>
-  </section>
-
-  <section id="watermark">
-    <h2>Add Watermark</h2>
-    <input type="text" id="watermark-text" placeholder="Watermark text"/>
-    <button id="watermark-btn">Add & Download</button>
-  </section>
-
-  <section id="password">
-    <h2>Password Protect / Unlock PDF</h2>
-    <input type="password" id="pw-protect" placeholder="Set password"/>
-    <button id="protect-btn">Protect & Download</button><br/>
-    <input type="password" id="pw-unlock" placeholder="Enter password to remove"/>
-    <button id="unlock-btn">Unlock & Download</button>
-  </section>
-
-  <section id="conv">
-    <h2>Convert: Word ↔ PDF / PDF → CSV (Bank Statement)</h2>
-    <input type="file" id="conv-file" accept=".pdf,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"/>
-    <button id="conv-btn">Convert & Download</button>
-  </section>
+<footer>
+  &copy; 2025 SmartPDF. Built with ♥ for browser-based productivity.
+</footer>
 
 <script>
+let pdfDoc = null, currentPage = 1, scale = 1.2;
 const canvas = document.getElementById('pdf-canvas');
 const ctx = canvas.getContext('2d');
-let pdfDoc = null, currentPage = 1, scale = 1.2, imgPlacement = null;
 
-// LOAD & RENDER PDF
 document.getElementById('upload-file').addEventListener('change', async e => {
   const f = e.target.files[0];
-  if (!f || f.type !== 'application/pdf') return alert('Upload a PDF file');
+  if (!f) return;
   const arr = new Uint8Array(await f.arrayBuffer());
   pdfDoc = await pdfjsLib.getDocument({data: arr}).promise;
   currentPage = 1;
-  drawPage();
+  renderPage();
 });
-async function drawPage() {
+
+async function renderPage() {
   const page = await pdfDoc.getPage(currentPage);
   const vp = page.getViewport({ scale });
   canvas.width = vp.width;
   canvas.height = vp.height;
   await page.render({ canvasContext: ctx, viewport: vp }).promise;
-  document.getElementById('page-info').textContent = `Page ${currentPage} / ${pdfDoc.numPages}`;
 }
 
-// IMAGE/E‑SIGN PLACEMENT
-let imgFile;
-document.getElementById('upload-image').addEventListener('change', e => { imgFile = e.target.files[0]; });
-document.getElementById('place-image').addEventListener('click', async () => {
-  if (!imgFile) return alert('Upload image first');
-  const img = new Image();
-  img.src = URL.createObjectURL(imgFile);
-  img.onload = () => {
-    imgPlacement = {img, x:20, y:20, w: img.width/4, h: img.height/4};
-    drawPage();
-    ctx.drawImage(img, imgPlacement.x, imgPlacement.y, imgPlacement.w, imgPlacement.h);
-    makeDraggable();
-  };
-});
-function makeDraggable() {
-  let dragging=false, ox=0, oy=0;
-  canvas.onmousedown = e => {
-    if (!imgPlacement) return;
-    const bx = e.offsetX, by = e.offsetY;
-    if (bx>=imgPlacement.x && bx<=imgPlacement.x+imgPlacement.w &&
-        by>=imgPlacement.y && by<=imgPlacement.y+imgPlacement.h) {
-      dragging = true; ox = bx - imgPlacement.x; oy = by - imgPlacement.y;
-    }
-  };
-  canvas.onmousemove = e => {
-    if (dragging) { imgPlacement.x = e.offsetX - ox; imgPlacement.y = e.offsetY - oy; redrawAll(); }
-  };
-  canvas.onmouseup = () => dragging = false;
-  function redrawAll() { drawPage().then(()=>{
-      ctx.drawImage(imgPlacement.img, imgPlacement.x, imgPlacement.y, imgPlacement.w, imgPlacement.h);
-  }); }
+function download(bytes, name) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
-document.getElementById('apply-eimage').addEventListener('click', async () => {
-  const bytes = await getCurrentPdfAsBytes();
-  const pdfLibDoc = await PDFLib.PDFDocument.load(bytes);
-  const imgBytes = await imgFile.arrayBuffer();
-  const embedded = imgFile.type.includes('png')
-    ? await pdfLibDoc.embedPng(imgBytes)
-    : await pdfLibDoc.embedJpg(imgBytes);
-  const page = pdfLibDoc.getPages()[currentPage-1];
-  page.drawImage(embedded, {
-    x: imgPlacement.x * 72/canvas.width * page.getWidth(),
-    y: page.getHeight() - (imgPlacement.y + imgPlacement.h) * 72/canvas.height,
-    width: imgPlacement.w * 72/canvas.width,
-    height: imgPlacement.h * 72/canvas.height
-  });
-  downloadBytes(await pdfLibDoc.save(), 'image_added.pdf');
-});
-
-// COMMON UTILS
-async function getCurrentPdfAsBytes() {
+document.getElementById('pagenum-btn').addEventListener('click', async () => {
+  if (!pdfDoc) return;
   const f = document.getElementById('upload-file').files[0];
-  if (f) return new Uint8Array(await f.arrayBuffer());
-  return pdfDoc ? await pdfDoc.save() : null;
-}
-function downloadBytes(bytes, filename) {
-  const blob = new Blob([bytes], { type:'application/pdf' });
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=filename;
-  a.click(); URL.revokeObjectURL(url);
-}
-
-// COMPRESS
-document.getElementById('compress-btn').addEventListener('click', async ()=>{
-  const bytes = await getCurrentPdfAsBytes();
-  const pl = await PDFLib.PDFDocument.load(bytes);
-  const copied = await PDFLib.PDFDocument.create();
-  for (const p of await pl.copyPages(pl, pl.getPageIndices())) {
-    copied.addPage(p);
-  }
-  downloadBytes(await copied.save({ useObjectStreams:true, compress:true }), 'compressed.pdf');
-});
-
-// MERGE
-document.getElementById('merge-btn').addEventListener('click', async ()=>{
-  const files = document.getElementById('merge-files').files;
-  if (files.length<2) return alert('Select at least 2 PDFs');
-  const merged = await PDFLib.PDFDocument.create();
-  for (let f of files) {
-    const u8=await f.arrayBuffer();
-    const d = await PDFLib.PDFDocument.load(u8);
-    const pages = await merged.copyPages(d, d.getPageIndices());
-    pages.forEach(pg=> merged.addPage(pg));
-  }
-  downloadBytes(await merged.save(), 'merged.pdf');
-});
-
-// ROTATE / DELETE / NAV
-document.getElementById('rotate-btn').addEventListener('click', async () => {
-  const bytes = await getCurrentPdfAsBytes();
-  const doc = await PDFLib.PDFDocument.load(bytes);
-  const pg = doc.getPages()[currentPage-1];
-  pg.setRotation(pg.getRotation().rotateClockwise());
-  downloadBytes(await doc.save(), 'rotated.pdf');
-});
-document.getElementById('delete-btn').addEventListener('click', async ()=>{
-  const bytes = await getCurrentPdfAsBytes();
-  const doc = await PDFLib.PDFDocument.load(bytes);
-  doc.removePage(currentPage-1);
-  downloadBytes(await doc.save(), 'deleted.pdf');
-});
-document.getElementById('prev-btn').addEventListener('click', ()=>{
-  if (currentPage>1) currentPage--, drawPage();
-});
-document.getElementById('next-btn').addEventListener('click', ()=>{
-  if (currentPage<pdfDoc.numPages) currentPage++, drawPage();
-});
-
-// PAGE NUMBER
-document.getElementById('pagenum-btn').addEventListener('click', async ()=>{
-  const bytes = await getCurrentPdfAsBytes();
-  const doc = await PDFLib.PDFDocument.load(bytes);
-  const pages = doc.getPages();
-  pages.forEach((pg,i)=>{
-    pg.drawText(`Page ${i+1}`, {
+  const arr = new Uint8Array(await f.arrayBuffer());
+  const doc = await PDFLib.PDFDocument.load(arr);
+  doc.getPages().forEach((pg, i) => {
+    pg.drawText(`Page ${i + 1}`, {
       x: pg.getWidth() - 50, y: 20, size: 12
     });
   });
-  downloadBytes(await doc.save(), 'with_pagenumbers.pdf');
+  const bytes = await doc.save();
+  download(bytes, "pagenumbered.pdf");
 });
 
-// WATERMARK
-document.getElementById('watermark-btn').addEventListener('click', async ()=>{
+document.getElementById('compress-btn').addEventListener('click', async () => {
+  if (!pdfDoc) return;
+  const f = document.getElementById('upload-file').files[0];
+  const arr = new Uint8Array(await f.arrayBuffer());
+  const doc = await PDFLib.PDFDocument.load(arr);
+  const newDoc = await PDFLib.PDFDocument.create();
+  const pages = await newDoc.copyPages(doc, doc.getPageIndices());
+  pages.forEach(p => newDoc.addPage(p));
+  const bytes = await newDoc.save({ useObjectStreams: true });
+  download(bytes, "compressed.pdf");
+});
+
+document.getElementById('rotate-btn').addEventListener('click', async () => {
+  if (!pdfDoc) return;
+  const f = document.getElementById('upload-file').files[0];
+  const arr = new Uint8Array(await f.arrayBuffer());
+  const doc = await PDFLib.PDFDocument.load(arr);
+  const page = doc.getPages()[currentPage - 1];
+  page.setRotation(page.getRotation().rotate(90));
+  const bytes = await doc.save();
+  download(bytes, "rotated.pdf");
+});
+
+document.getElementById('delete-btn').addEventListener('click', async () => {
+  if (!pdfDoc) return;
+  const f = document.getElementById('upload-file').files[0];
+  const arr = new Uint8Array(await f.arrayBuffer());
+  const doc = await PDFLib.PDFDocument.load(arr);
+  doc.removePage(currentPage - 1);
+  const bytes = await doc.save();
+  download(bytes, "deleted.pdf");
+});
+
+document.getElementById('watermark-btn').addEventListener('click', async () => {
+  if (!pdfDoc) return;
   const txt = document.getElementById('watermark-text').value;
-  if (!txt) return alert('Enter watermark text');
-  const bytes = await getCurrentPdfAsBytes();
-  const doc = await PDFLib.PDFDocument.load(bytes);
-  const pages = doc.getPages();
-  pages.forEach(pg=>{
+  if (!txt) return alert("Enter watermark text");
+  const f = document.getElementById('upload-file').files[0];
+  const arr = new Uint8Array(await f.arrayBuffer());
+  const doc = await PDFLib.PDFDocument.load(arr);
+  doc.getPages().forEach(pg => {
     pg.drawText(txt, {
       x: pg.getWidth()/2 - 50,
       y: pg.getHeight()/2,
-      size: 50,
-      color: PDFLib.rgb(0.75, 0.75, 0.75),
-      rotate: PDFLib.degrees(-45),
-      opacity: 0.3,
+      size: 36,
+      opacity: 0.4,
+      rotate: PDFLib.degrees(-45)
     });
   });
-  downloadBytes(await doc.save(), 'watermarked.pdf');
-});
-
-// PASSWORD PROTECT / UNLOCK
-document.getElementById('protect-btn').addEventListener('click', async ()=>{
-  const pw = document.getElementById('pw-protect').value;
-  if (!pw) return alert('Enter password');
-  const bytes = await getCurrentPdfAsBytes();
-  const doc = await PDFLib.PDFDocument.load(bytes);
-  doc.encrypt({ userPassword: pw, ownerPassword: pw, permissions: {} });
-  downloadBytes(await doc.save(), 'protected.pdf');
-});
-document.getElementById('unlock-btn').addEventListener('click', async ()=>{
-  const pw = document.getElementById('pw-unlock').value;
-  if (!pw) return alert('Enter password');
-  const f = document.getElementById('upload-file').files[0];
-  const arr = new Uint8Array(await f.arrayBuffer());
-  const doc = await PDFLib.PDFDocument.load(arr, { password: pw });
-  downloadBytes(await doc.save(), 'unlocked.pdf');
-});
-
-// CONVERT: Word ↔ PDF, PDF→CSV (very basic)
-document.getElementById('conv-btn').addEventListener('click', async () => {
-  const f = document.getElementById('conv-file').files[0];
-  if (!f) return alert('Select file');
-  if (f.type === 'application/pdf') {
-    // PDF to CSV: stub that reads text lines and outputs CSV (very approximate)
-    const arr = new Uint8Array(await f.arrayBuffer());
-    const pl = await pdfjsLib.getDocument({data:arr}).promise;
-    let out='page,text\n';
-    for (let i=1;i<=pl.numPages;i++){
-      const page = await pl.getPage(i);
-      const txt = await page.getTextContent();
-      const strs = txt.items.map(it=>it.str.replace(/,/g,''));
-      out += `${i},"${strs.join(' ')}"\n`;
-    }
-    const blob = new Blob([out], {type:'text/csv'});
-    const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download = 'converted.csv'; a.click();
-  } else if (f.name.match(/\.docx?$/i)) {
-    // Simple Word → PDF converter by wrapping doc in PDF-lib (placeholder: ghostscript/back-end needed)
-    alert('Word to PDF conversion not supported client‑side without backend.');
-  } else {
-    alert('Unsupported format');
-  }
+  const bytes = await doc.save();
+  download(bytes, "watermarked.pdf");
 });
 </script>
 </body>
