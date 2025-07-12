@@ -1,63 +1,164 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
-<script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';
-</script>
-<script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-<canvas id="pdf-canvas"></canvas>
-<input type="file" id="upload-file" accept="application/pdf"/>
-<button id="prev-btn">Prev</button>
-<button id="next-btn">Next</button>
-<button id="rotate-btn">Rotate</button>
-<button id="delete-btn">Delete Page</button>
-<button id="pagenum-btn">Add Page Numbers</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>SmartPDF Toolkit</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.worker.min.js';</script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body { margin:0; font-family:Arial,sans-serif; background:#f2f4f7; }
+    header { background:#007ACC; color:#fff; padding:1em 2em; display:flex; align-items:center; }
+    header h1 { flex:1; margin:0; }
+    nav a { color:#fff; margin-left:20px; text-decoration:none;font-size:1em; }
+    .hero { text-align:center; padding:3em 1em; background:#e6f3ff;}
+    .hero h2 { margin:.2em 0; font-size:2em; }
+    .tool-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:1em; padding:1em; }
+    .tool-card { background:white;border-radius:8px;padding:1em;box-shadow:0 2px 5px rgba(0,0,0,0.1);text-align:center;cursor:pointer;transition:all .2s;}
+    .tool-card:hover { transform:translateY(-4px);box-shadow:0 4px 8px rgba(0,0,0,0.15);}
+    .tool-card i { font-size:2em;color:#007ACC;margin-bottom:.5em; }
+    .tool-card span { font-weight:bold;display:block;font-size:1em;}
+    #canvas-container { text-align:center;padding:1em;}
+    canvas { border:1px solid #ccc;max-width:100%; }
+    .controls { text-align:center;padding:1em; }
+    .controls button, .controls input[type="text"] { padding:.7em 1em;margin:.5em;font-size:1em; }
+    footer { text-align:center;padding:2em;font-size:.9em;color:#555; }
+  </style>
+</head>
+<body>
+  <header><h1>SmartPDF Toolkit</h1><nav><a href="#tools">Tools</a><a href="#viewer">Viewer</a></nav></header>
+  <section class="hero"><h2>Your One‑Stop PDF Toolbox</h2><p>Browser‑based PDF operations with no backend.</p></section>
+
+  <section id="tools">
+    <div class="tool-grid">
+      <div class="tool-card" onclick="trigger('#upload');"><i class="fa fa-upload"></i><span>Upload PDF</span></div>
+      <div class="tool-card" onclick="trigger('#mergeInput');"><i class="fa fa-object-group"></i><span>Merge PDFs</span></div>
+      <div class="tool-card" onclick="document.getElementById('rotate').click();"><i class="fa fa-sync-alt"></i><span>Rotate Page</span></div>
+      <div class="tool-card" onclick="document.getElementById('deletePage').click();"><i class="fa fa-trash"></i><span>Delete Page</span></div>
+      <div class="tool-card" onclick="document.getElementById('pagenum').click();"><i class="fa fa-list-ol"></i><span>Add Page Numbers</span></div>
+      <div class="tool-card" onclick="document.getElementById('compress').click();"><i class="fa fa-compress"></i><span>Compress</span></div>
+      <div class="tool-card" onclick="document.getElementById('watermarkText').focus();"><i class="fa fa-tint"></i><span>Add Watermark</span></div>
+      <div class="tool-card" onclick="trigger('#uploadStamp');"><i class="fa fa-stamp"></i><span>Add Stamp/Image</span></div>
+      <div class="tool-card" onclick="document.getElementById('protect').click();"><i class="fa fa-lock"></i><span>Protect PDF</span></div>
+      <div class="tool-card" onclick="document.getElementById('unlock').click();"><i class="fa fa-unlock"></i><span>Unlock PDF</span></div>
+      <div class="tool-card" onclick="trigger('#extractCSV');"><i class="fa fa-file-csv"></i><span>PDF → CSV</span></div>
+    </div>
+  </section>
+
+  <section id="viewer">
+    <div id="canvas-container"><canvas id="pdf-canvas"></canvas></div>
+    <div class="controls">
+      <input type="file" id="upload" accept="application/pdf">
+      <input type="file" id="mergeInput" accept="application/pdf" multiple>
+      <input type="file" id="uploadStamp" accept="image/*">
+      <br>
+      <button id="prev">Prev Page</button><button id="next">Next Page</button><br>
+      <button id="rotate">Rotate</button><button id="deletePage">Delete</button><button id="pagenum">Page Numbers</button><button id="compress">Compress</button><button id="watermark">Watermark</button><button id="stampBtn">Embed Stamp</button>
+      <input type="text" id="watermarkText" placeholder="Watermark Text">
+      <input type="password" id="passProtect" placeholder="Protect Password"><button id="protect">Protect</button>
+      <input type="password" id="passUnlock" placeholder="Unlock Password"><button id="unlock">Unlock</button>
+      <button id="extractCSV">Extract CSV</button>
+    </div>
+  </section>
+
+  <footer>&copy; 2025 SmartPDF Toolkit</footer>
 
 <script>
   let pdfDoc, currentPage = 1, scale = 1.2;
+
   const canvas = document.getElementById('pdf-canvas'), ctx = canvas.getContext('2d');
-  async function renderPage() {
+
+  async function render() {
     const page = await pdfDoc.getPage(currentPage);
     const vp = page.getViewport({ scale });
     canvas.width = vp.width; canvas.height = vp.height;
     await page.render({ canvasContext: ctx, viewport: vp }).promise;
   }
 
-  document.getElementById('upload-file').onchange = async e => {
-    const u8 = new Uint8Array(await e.target.files[0].arrayBuffer());
-    pdfDoc = await pdfjsLib.getDocument({ data: u8 }).promise;
-    currentPage = 1; await renderPage();
-  };
+  document.getElementById('upload').addEventListener('change', async e => {
+    const buf = new Uint8Array(await e.target.files[0].arrayBuffer());
+    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+    currentPage = 1; await render();
+  });
 
-  document.getElementById('prev-btn').onclick = () => { if (currentPage>1) currentPage--, renderPage(); };
-  document.getElementById('next-btn').onclick = () => { if (currentPage<pdfDoc.numPages) currentPage++, renderPage(); };
+  document.getElementById('prev').onclick = () => { if (currentPage>1) currentPage--, render(); };
+  document.getElementById('next').onclick = () => { if (currentPage<pdfDoc.numPages) currentPage++, render(); };
 
-  document.getElementById('rotate-btn').onclick = async () => {
+  async function modifyThenReload(modifier) {
     const existing = await pdfDoc.save();
     const doc = await PDFLib.PDFDocument.load(existing);
-    const pg = doc.getPages()[currentPage - 1];
-    pg.setRotation(pg.getRotation().rotate(90));
+    await modifier(doc);
     const bytes = await doc.save();
     pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
-    await renderPage();
-  };
+    await render();
+  }
 
-  document.getElementById('delete-btn').onclick = async () => {
-    const existing = await pdfDoc.save();
-    const doc = await PDFLib.PDFDocument.load(existing);
+  document.getElementById('rotate').onclick = () => modifyThenReload(doc => {
+    doc.getPages()[currentPage - 1].setRotation(doc.getPages()[currentPage - 1].getRotation().rotate(90));
+  });
+
+  document.getElementById('deletePage').onclick = () => modifyThenReload(doc => {
     doc.removePage(currentPage - 1);
-    const bytes = await doc.save();
-    pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
-    if (currentPage > pdfDoc.numPages) currentPage = pdfDoc.numPages;
-    await renderPage();
+    if (currentPage > doc.getPageCount()) currentPage = doc.getPageCount();
+  });
+
+  document.getElementById('pagenum').onclick = () => modifyThenReload(doc => {
+    doc.getPages().forEach((pg, i) => {
+      pg.drawText(`Page ${i + 1}`, { x: pg.getWidth() - 50, y: 20, size: 12 });
+    });
+  });
+
+  document.getElementById('compress').onclick = () => modifyThenReload(async doc => {
+    const newDoc = await PDFLib.PDFDocument.create();
+    (await doc.copyPages(doc, doc.getPageIndices())).forEach(p => newDoc.addPage(p));
+    doc = newDoc;
+  });
+
+  document.getElementById('watermark').onclick = () => modifyThenReload(doc => {
+    const txt = document.getElementById('watermarkText').value || '';
+    doc.getPages().forEach(pg => {
+      pg.drawText(txt, { x: pg.getWidth()/2-60, y: pg.getHeight()/2, size: 36, opacity: 0.3, rotate: PDFLib.degrees(-45) });
+    });
+  });
+
+  document.getElementById('stampBtn').onclick = async () => {
+    const file = document.getElementById('uploadStamp').files[0];
+    if (!file) return alert('Select stamp image');
+    const arr = await file.arrayBuffer();
+    await modifyThenReload(async doc => {
+      const img = file.type.includes('png')
+        ? await doc.embedPng(arr)
+        : await doc.embedJpg(arr);
+      doc.getPages()[currentPage - 1].drawImage(img, { x:50, y:50, width:100, height:100 });
+    });
   };
 
-  document.getElementById('pagenum-btn').onclick = async () => {
+  document.getElementById('extractCSV').onclick = async () => {
     const existing = await pdfDoc.save();
-    const doc = await PDFLib.PDFDocument.load(existing);
-    doc.getPages().forEach((p,i)=>{
-      p.drawText(`Page ${i+1}`, { x: p.getWidth()-60, y:20, size:12 });
-    });
-    const bytes = await doc.save();
-    pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
-    await renderPage();
+    const pl = await pdfjsLib.getDocument({ data: existing }).promise;
+    let csv = 'page,text\n';
+    for (let i = 1; i <= pl.numPages; i++) {
+      const content = await pl.getPage(i).then(pg => pg.getTextContent());
+      csv += `${i},"${content.items.map(it => it.str.replace(/"/g,'')).join(' ')}"\n`;
+    }
+    const blob = new Blob([csv], { type:'text/csv' });
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='extracted.csv'; a.click();
   };
+
+  document.getElementById('protect').onclick = () => modifyThenReload(doc => {
+    const pw = document.getElementById('passProtect').value || '';
+    doc.encrypt({ userPassword: pw, ownerPassword: pw });
+  });
+
+  document.getElementById('unlock').onclick = async () => {
+    const pw = document.getElementById('passUnlock').value;
+    const buf = await document.getElementById('upload').files[0].arrayBuffer();
+    pdfDoc = await pdfjsLib.getDocument({ data: new Uint8Array(buf), password: pw }).promise;
+    currentPage = 1; await render();
+  };
+
+  function trigger(sel) { document.querySelector(sel).click(); }
 </script>
+</body>
+</html>
